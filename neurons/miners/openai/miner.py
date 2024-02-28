@@ -30,6 +30,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain.chat_models import ChatOpenAI
 from dotenv import load_dotenv, find_dotenv
 from langchain.callbacks import get_openai_callback
+import pyodc
 
 
 
@@ -48,6 +49,10 @@ class OpenAIMiner(Miner):
 
     def __init__(self, config=None):
         super().__init__(config=config)
+
+        self.sql_connection_string = os.getenv('SQL_CONNECTION_STRING')
+        if not self.sql_connection_string:
+            raise ValueError("SQL connection string is not set in environment variables")
 
         bt.logging.info(f"Initializing with model {self.config.neuron.model_id}...")
 
@@ -70,6 +75,18 @@ class OpenAIMiner(Miner):
         self.accumulated_prompt_tokens = 0
         self.accumulated_completion_tokens = 0
         self.accumulated_total_cost = 0
+
+    def insert_into_queries(self, query_date, prompt, response):
+        try:
+            with pyodbc.connect(self.sql_connection_string) as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                    INSERT INTO queries (query_date, prompt, response) 
+                    VALUES (?, ?, ?)
+                """, (query_date, prompt, response))
+                conn.commit()
+        except Exception as e:
+            bt.logging.error(f"Failed to insert into database: {e}")
 
     def get_cost_logging(self, cb):
         bt.logging.info(f"Total Tokens: {cb.total_tokens}")
@@ -141,6 +158,15 @@ class OpenAIMiner(Miner):
                     )
 
             bt.logging.debug(f"✅ Served Response: {response}")
+            # Save prompt and resposne to database timestamped
+            try:
+            # Assuming you get the current time, prompt, and response here
+                current_time = time.time()
+                self.insert_into_queries(current_time, message, response)
+            except Exception as e:
+                bt.logging.error(f"Error while inserting into database: {e}")
+
+
             self.step += 1
 
             return synapse
@@ -163,3 +189,4 @@ if __name__ == "__main__":
             if miner.should_exit:
                 bt.logging.warning("Ending miner...")
                 break
+
