@@ -16,6 +16,7 @@
 # DEALINGS IN THE SOFTWARE.
 
 import os
+import datetime
 import time
 import bittensor as bt
 import argparse
@@ -78,6 +79,8 @@ class OpenAIMiner(Miner):
 
     def insert_into_queries(self, query_date, prompt, response):
         try:
+	    # Convert the timestamp to a datetime object
+            query_date = datetime.datetime.fromtimestamp(query_date)
             with pyodbc.connect(self.sql_connection_string) as conn:
                 cursor = conn.cursor()
                 cursor.execute("""
