@@ -30,7 +30,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain.chat_models import ChatOpenAI
 from dotenv import load_dotenv, find_dotenv
 from langchain.callbacks import get_openai_callback
-import pyodc
+import pyodbc
 
 
 
