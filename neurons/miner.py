@@ -173,6 +173,10 @@ class Miner(BaseMinerNeuron):
         bt.logging.info('Logging event to wandb...', step_log)
         wandb.log(step_log)
 
+    def log_status(self):
+        m = self.metagraph
+        bt.logging.info(f"Miner running:: network: {self.subtensor.network} | step: {self.step} | uid: {self.uid} | trust: {m.trust[self.uid]:.3f} | emission {m.emission[self.uid]:.3f}")
+
 
 # This is the main function, which runs the miner.
 if __name__ == "__main__":
